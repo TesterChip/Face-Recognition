@@ -2,33 +2,49 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Face Tracking UI</title>
+  <title>Face Tracking + System Info</title>
   <style>
     body {
       font-family: "Segoe UI", Roboto, Arial, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
       color: #eee;
       margin: 0;
       padding: 20px;
     }
     h1 {
       text-align: center;
-      color: #9d4edd;
+      color: #4cc9f0;
       margin-bottom: 20px;
     }
-    .container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 0 20px rgba(78,205,255,0.3);
+    }
+    .card h2 {
+      margin-top: 0;
+      color: #9d4edd;
+    }
+    #info p {
+      margin: 8px 0;
+      font-size: 15px;
     }
     .video-wrapper {
       position: relative;
       width: 640px;
       height: 480px;
+      margin: auto;
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 0 25px rgba(157, 78, 221, 0.6);
+      box-shadow: 0 0 25px rgba(0,255,0,0.4);
     }
     video, canvas {
       position: absolute;
@@ -40,38 +56,62 @@
     }
     footer {
       text-align: center;
-      margin-top: 20px;
+      margin-top: 30px;
       font-size: 13px;
       color: #aaa;
     }
   </style>
 </head>
 <body>
-  <h1>Live Face Tracking</h1>
-  <div class="container">
-    <div class="video-wrapper">
-      <video id="video" autoplay playsinline></video>
-      <canvas id="canvas"></canvas>
+  <h1>Live Multi‑Face Tracking + System Info</h1>
+
+  <div class="grid">
+    <div class="card">
+      <h2>System Information</h2>
+      <div id="info"></div>
+    </div>
+
+    <div class="card">
+      <h2>Webcam Face Tracking</h2>
+      <div class="video-wrapper">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+      </div>
     </div>
   </div>
-  <footer>Powered by face-api.js</footer>
+
+  <footer>Powered by face-api</footer>
 
   <!-- Face detection library -->
   <script defer src="https://unpkg.com/face-api.js"></script>
   <script>
+    const info = document.getElementById('info');
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
 
+    // --- Browser + OS detection ---
+    function detectBrowserAndOS() {
+      const uaData = navigator.userAgentData;
+      const browser = uaData
+        ? (uaData.brands || []).map(b => `${b.brand} ${b.version || ''}`.trim()).join(', ')
+        : navigator.userAgent;
+      const os = uaData ? uaData.platform : navigator.platform;
+
+      info.innerHTML += `<p><b>Browser:</b> ${browser}</p>`;
+      info.innerHTML += `<p><b>Operating system:</b> ${os}</p>`;
+    }
+
+    // --- Webcam + face tracking ---
     async function startVideo() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
         video.srcObject = stream;
       } catch (err) {
-        console.error("Webcam access denied:", err);
+        info.innerHTML += `<p><b>Webcam:</b> Access denied ❌</p>`;
       }
     }
 
-    async function loadModels() {
+    async function loadFaceModels() {
       await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
     }
 
@@ -88,12 +128,13 @@
           const ctx = canvas.getContext('2d');
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+          // Draw green boxes for each detected face
           detections.forEach(det => {
             const { x, y, width, height } = det.box;
-            ctx.strokeStyle = "rgba(157, 78, 221, 0.9)";
-            ctx.lineWidth = 4;
-            ctx.shadowColor = "rgba(78, 205, 255, 0.8)";
-            ctx.shadowBlur = 15;
+            ctx.strokeStyle = "rgba(0, 255, 0, 0.9)";
+            ctx.lineWidth = 3;
+            ctx.shadowColor = "rgba(0, 255, 0, 0.6)";
+            ctx.shadowBlur = 12;
             ctx.strokeRect(x, y, width, height);
           });
         }
@@ -102,9 +143,11 @@
       tick();
     }
 
+    // --- Init ---
+    detectBrowserAndOS();
     (async () => {
       await startVideo();
-      await loadModels();
+      await loadFaceModels();
       video.addEventListener('loadeddata', runFaceTracking, { once: true });
     })();
   </script>
