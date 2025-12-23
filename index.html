@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Face Tracking UI</title>
+  <style>
+    body {
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      color: #eee;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #9d4edd;
+      margin-bottom: 20px;
+    }
+    .container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    .video-wrapper {
+      position: relative;
+      width: 640px;
+      height: 480px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 25px rgba(157, 78, 221, 0.6);
+    }
+    video, canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 640px;
+      height: 480px;
+      border-radius: 12px;
+    }
+    footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <h1>Live Face Tracking</h1>
+  <div class="container">
+    <div class="video-wrapper">
+      <video id="video" autoplay playsinline></video>
+      <canvas id="canvas"></canvas>
+    </div>
+  </div>
+  <footer>Powered by face-api.js</footer>
+
+  <!-- Face detection library -->
+  <script defer src="https://unpkg.com/face-api.js"></script>
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+
+    async function startVideo() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        video.srcObject = stream;
+      } catch (err) {
+        console.error("Webcam access denied:", err);
+      }
+    }
+
+    async function loadModels() {
+      await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+    }
+
+    function runFaceTracking() {
+      const displaySize = { width: video.videoWidth || 640, height: video.videoHeight || 480 };
+      canvas.width = displaySize.width;
+      canvas.height = displaySize.height;
+
+      async function tick() {
+        if (video.readyState >= 2) {
+          const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 256, scoreThreshold: 0.5 });
+          const detections = await faceapi.detectAllFaces(video, options);
+
+          const ctx = canvas.getContext('2d');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          detections.forEach(det => {
+            const { x, y, width, height } = det.box;
+            ctx.strokeStyle = "rgba(157, 78, 221, 0.9)";
+            ctx.lineWidth = 4;
+            ctx.shadowColor = "rgba(78, 205, 255, 0.8)";
+            ctx.shadowBlur = 15;
+            ctx.strokeRect(x, y, width, height);
+          });
+        }
+        requestAnimationFrame(tick);
+      }
+      tick();
+    }
+
+    (async () => {
+      await startVideo();
+      await loadModels();
+      video.addEventListener('loadeddata', runFaceTracking, { once: true });
+    })();
+  </script>
+</body>
+</html>
