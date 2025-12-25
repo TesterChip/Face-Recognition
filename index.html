@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Face Tracking + System Info + Recording</title>
+  <title>Face Tracking + System Info + Recording + Voice Meter</title>
   <style>
     body {
       font-family: "Segoe UI", Roboto, Arial, sans-serif;
@@ -73,16 +73,28 @@
       background: #4cc9f0;
       color: #000;
       font-weight: bold;
-      cursor: pointer;
-    }
-    .controls a {
-      text-decoration: none;
+      cursor: pointer: none;
       display: none;
+    }
+    #voiceMeter {
+      width: 300px;
+      height: 20px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      margin: 20px auto;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(78,205,255,0.5);
+    }
+    #voiceLevel {
+      height: 100%;
+      width: 0%;
+      background: #4cc9f0;
+      transition: width 0.1s linear;
     }
   </style>
 </head>
 <body>
-  <h1>Live Multi‑Face Tracking + System Info + Recording</h1>
+  <h1>Live Multi‑Face Tracking + System Info + Recording + Voice Meter</h1>
 
   <div class="grid">
     <div class="card">
@@ -93,10 +105,14 @@
     <div class="card">
       <h2>Webcam Face Tracking</h2>
       <div class="video-wrapper">
-        <video id="video" autoplay playsinline muted></video> <!-- 🔇 muted -->
+        <video id="video" autoplay playsinline muted></video> <!-- muted to avoid echo -->
         <canvas id="canvas"></canvas>
       </div>
     </div>
+  </div>
+
+  <div id="voiceMeter">
+    <div id="voiceLevel"></div>
   </div>
 
   <div class="controls">
@@ -113,6 +129,9 @@
     const info = document.getElementById('info');
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
+    const voiceLevel = document.getElementById('voiceLevel');
+
+    let audioStream; // keep reference for voice meter
 
     // --- Browser + OS detection ---
     function detectBrowserAndOS() {
@@ -133,6 +152,8 @@
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
         video.srcObject = stream;
+        audioStream = stream;
+        setupVoiceMeter(stream); // start voice meter
       } catch (err) {
         info.innerHTML += `<p><b>Webcam:</b> Access denied ❌</p>`;
       }
@@ -180,6 +201,28 @@
       tick();
     }
 
+    // --- Voice Meter ---
+    function setupVoiceMeter(stream) {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      function updateMeter() {
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+        const avg = sum / dataArray.length;
+        const level = Math.min(100, (avg / 255) * 100);
+        voiceLevel.style.width = level + "%";
+        requestAnimationFrame(updateMeter);
+      }
+      updateMeter();
+    }
+
     // --- Recording ---
     let mediaRecorder;
     let recordedChunks = [];
@@ -204,33 +247,3 @@
         const url = URL.createObjectURL(blob);
         const link = document.getElementById('downloadLink');
         link.href = url;
-        link.download = 'face_tracking_recording.webm';
-        link.style.display = 'inline';
-        recordedChunks = [];
-      };
-
-      mediaRecorder.start();
-    }
-
-    function stopRecording() {
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        mediaRecorder.stop();
-      }
-      // Optional: stop audio tracks completely
-      // const stream = video.srcObject;
-      // if (stream) stream.getAudioTracks().forEach(track => track.stop());
-    }
-
-    document.getElementById('startRec').addEventListener('click', startRecording);
-    document.getElementById('stopRec').addEventListener('click', stopRecording);
-
-    // --- Init ---
-    detectBrowserAndOS();
-    (async () => {
-      await startVideo();
-      await loadFaceModels();
-      video.addEventListener('loadeddata', runFaceTracking, { once: true });
-    })();
-  </script>
-</body>
-</html>
