@@ -2,303 +2,987 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Face Tracking + System Info + Recording + Voice Meter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="description" content="Real-time face and hand tracking with recording capabilities" />
+  <title>🎥 Face + Hand Tracking System Pro</title>
+  
   <style>
-    body {
-      font-family: "Segoe UI", Roboto, Arial, sans-serif;
-      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-      color: #eee;
+    /* ==================== RESET & BASE ==================== */
+    * {
       margin: 0;
-      padding: 20px;
+      padding: 0;
+      box-sizing: border-box;
     }
+
+    :root {
+      --primary: #00ff87;
+      --primary-dark: #00cc6a;
+      --secondary: #ff6b6b;
+      --accent: #ffd700;
+      --bg-dark: #0a0a0a;
+      --bg-medium: #1a1a2e;
+      --bg-light: #16213e;
+      --text-light: #e8e8e8;
+      --text-muted: #b8b8b8;
+      --border-color: rgba(0, 255, 135, 0.2);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+      background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-medium) 50%, var(--bg-light) 100%);
+      color: var(--text-light);
+      padding: 20px;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ==================== TYPOGRAPHY ==================== */
     h1 {
       text-align: center;
-      color: #4cc9f0;
-      margin-bottom: 20px;
+      color: var(--primary);
+      margin-bottom: 30px;
+      font-size: clamp(1.5rem, 5vw, 2.5rem);
+      font-weight: 700;
+      text-shadow: 0 0 20px rgba(0, 255, 135, 0.5);
+      animation: glow 2s ease-in-out infinite alternate;
     }
+
+    @keyframes glow {
+      from { text-shadow: 0 0 20px rgba(0, 255, 135, 0.5); }
+      to { text-shadow: 0 0 30px rgba(0, 255, 135, 0.8); }
+    }
+
+    h2 {
+      margin: 0 0 20px 0;
+      color: var(--primary);
+      font-size: 1.4rem;
+      font-weight: 600;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 10px;
+    }
+
+    /* ==================== LAYOUT ==================== */
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
     .grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      max-width: 1200px;
-      margin: auto;
+      grid-template-columns: minmax(300px, 1fr) minmax(500px, 2fr);
+      gap: 30px;
+      margin-bottom: 30px;
     }
+
+    @media (max-width: 1024px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ==================== CARDS ==================== */
     .card {
-      background: rgba(255,255,255,0.05);
-      border-radius: 12px;
-      padding: 20px;
-      box-shadow: 0 0 20px rgba(78,205,255,0.3);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+      transition: all 0.3s ease;
     }
-    .card h2 {
-      margin-top: 0;
-      color: #9d4edd;
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0, 255, 135, 0.2);
     }
+
+    /* ==================== SYSTEM INFO ==================== */
     #info p {
-      margin: 8px 0;
+      margin: 12px 0;
       font-size: 15px;
+      line-height: 1.6;
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: background 0.2s ease;
     }
+
+    #info p:hover {
+      background: rgba(0, 255, 135, 0.05);
+      padding-left: 10px;
+    }
+
+    #info p b {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    #info p span {
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: var(--primary);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ==================== VIDEO SECTION ==================== */
+    .video-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      padding: 12px 20px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      font-size: 14px;
+      width: 100%;
+      max-width: 640px;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--secondary);
+      animation: blink 2s infinite;
+      box-shadow: 0 0 10px var(--secondary);
+    }
+
+    .status-dot.active {
+      background: var(--primary);
+      box-shadow: 0 0 15px var(--primary);
+      animation: none;
+    }
+
+    @keyframes blink {
+      0%, 50%, 100% { opacity: 1; }
+      25%, 75% { opacity: 0.3; }
+    }
+
     .video-wrapper {
       position: relative;
-      width: 640px;
-      height: 480px;
-      margin: auto;
-      border-radius: 12px;
+      width: 100%;
+      max-width: 640px;
+      aspect-ratio: 4/3;
+      margin: 0 auto 20px;
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 0 25px rgba(0,255,0,0.4);
+      box-shadow: 0 0 40px rgba(0, 255, 135, 0.3);
+      background: #000;
     }
+
     video, canvas {
       position: absolute;
       top: 0;
       left: 0;
-      width: 640px;
-      height: 480px;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+
+    .overlay-info {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--primary);
+      z-index: 10;
+      font-family: 'Courier New', monospace;
+    }
+
+    /* ==================== VOICE METER ==================== */
+    .voice-meter-section {
+      width: 100%;
+      max-width: 640px;
+      margin: 0 auto 20px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.03);
       border-radius: 12px;
-      transform: scaleX(-1); /* Mirror horizontally */
+      border: 1px solid var(--border-color);
     }
-    footer {
-      text-align: center;
-      margin-top: 30px;
-      font-size: 13px;
-      color: #aaa;
+
+    .voice-meter-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: var(--primary);
     }
-    .controls {
-      text-align: center;
-      margin-top: 20px;
+
+    #voicePercent {
+      font-weight: 700;
+      font-size: 16px;
     }
-    .controls button, .controls a {
-      margin: 0 10px;
-      padding: 8px 16px;
-      border: none;
-      border-radius: 6px;
-      background: #4cc9f0;
-      color: #000;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .controls a {
-      text-decoration: none;
-      display: none;
-    }
+
     #voiceMeter {
-      width: 300px;
-      height: 20px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 10px;
-      margin: 20px auto;
+      width: 100%;
+      height: 24px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 0 10px rgba(78,205,255,0.5);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+      position: relative;
     }
+
     #voiceLevel {
       height: 100%;
       width: 0%;
-      background: #4cc9f0;
-      transition: width 0.1s linear;
+      background: linear-gradient(90deg, var(--primary) 0%, #00d4ff 100%);
+      transition: width 0.05s linear;
+      box-shadow: 0 0 20px rgba(0, 255, 135, 0.6);
+      position: relative;
+    }
+
+    #voiceLevel::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: white;
+      box-shadow: 0 0 10px white;
+    }
+
+    /* ==================== CONTROLS ==================== */
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin: 30px 0;
+    }
+
+    .btn {
+      padding: 14px 32px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .btn span {
+      position: relative;
+      z-index: 1;
+    }
+
+    #startRec {
+      background: linear-gradient(135deg, var(--primary) 0%, #00d4ff 100%);
+      color: #000;
+    }
+
+    #startRec:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0, 255, 135, 0.5);
+    }
+
+    #stopRec {
+      background: linear-gradient(135deg, var(--secondary) 0%, #ff8844 100%);
+      color: #fff;
+    }
+
+    #stopRec:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(255, 107, 107, 0.5);
+    }
+
+    #downloadLink {
+      background: linear-gradient(135deg, #8844ff 0%, #ff44ff 100%);
+      color: #fff;
+      display: none;
+    }
+
+    #downloadLink:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(136, 68, 255, 0.5);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* ==================== RECORDING INFO ==================== */
+    .recording-info {
+      text-align: center;
+      margin: 20px auto;
+      padding: 20px;
+      max-width: 640px;
+      background: rgba(255, 68, 68, 0.1);
+      border: 2px solid rgba(255, 68, 68, 0.5);
+      border-radius: 12px;
+      display: none;
+      font-size: 14px;
+    }
+
+    .recording-info.active {
+      display: block;
+      animation: fadeInUp 0.3s ease;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .recording-time {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--secondary);
+      margin-top: 10px;
+      font-family: 'Courier New', monospace;
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    /* ==================== STATS ==================== */
+    .stats-section {
+      width: 100%;
+      max-width: 640px;
+      margin: 20px auto;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 15px;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    /* ==================== ERROR MESSAGE ==================== */
+    .error-message {
+      background: rgba(255, 68, 68, 0.1);
+      border: 1px solid rgba(255, 68, 68, 0.5);
+      color: #ff6b6b;
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin: 20px auto;
+      max-width: 800px;
+      text-align: center;
+      display: none;
+      animation: shake 0.5s ease;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+
+    /* ==================== FOOTER ==================== */
+    footer {
+      text-align: center;
+      margin-top: 50px;
+      padding-top: 30px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 14px;
+      color: #888;
+    }
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    footer a:hover {
+      color: var(--primary-dark);
+    }
+
+    /* ==================== RESPONSIVE ==================== */
+    @media (max-width: 640px) {
+      body {
+        padding: 10px;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+      }
+
+      .card {
+        padding: 16px;
+      }
+
+      .btn {
+        padding: 12px 24px;
+        font-size: 14px;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
   </style>
 </head>
+
 <body>
-  <h1>Live Multi‑Face Tracking + System Info + Recording + Voice Meter</h1>
+  <div class="container">
+    <h1>🎥 Face + Hand Tracking System Pro</h1>
 
-  <div class="grid">
-    <div class="card">
-      <h2>System Information</h2>
-      <div id="info"></div>
-    </div>
+    <div id="errorContainer" class="error-message"></div>
 
-    <div class="card">
-      <h2>Webcam Face Tracking</h2>
-      <div class="video-wrapper">
-        <video id="video" autoplay playsinline muted></video> <!-- muted to avoid echo -->
-        <canvas id="canvas"></canvas>
+    <div class="grid">
+      <!-- System Information Card -->
+      <div class="card">
+        <h2>📊 System Information</h2>
+        <div id="info" class="loading">Loading system info...</div>
+      </div>
+
+      <!-- Video Tracking Card -->
+      <div class="card">
+        <div class="video-section">
+          <h2>📹 Real-Time Tracking</h2>
+          
+          <div class="status-indicator">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">Initializing camera...</span>
+          </div>
+
+          <div class="video-wrapper">
+            <video id="video" autoplay playsinline muted></video>
+            <canvas id="canvas"></canvas>
+            <div class="overlay-info" id="overlayInfo">
+              FPS: <span id="fps">0</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- Voice Meter -->
+    <div class="voice-meter-section">
+      <div class="voice-meter-label">
+        <span>🎤 Voice Level Monitor</span>
+        <span id="voicePercent">0%</span>
+      </div>
+      <div id="voiceMeter">
+        <div id="voiceLevel"></div>
+      </div>
+    </div>
+
+    <!-- Detection Stats -->
+    <div class="stats-section">
+      <h2>📈 Detection Statistics</h2>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-value" id="facesDetected">0</div>
+          <div class="stat-label">Faces</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="handsDetected">0</div>
+          <div class="stat-label">Hands</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="totalFrames">0</div>
+          <div class="stat-label">Frames</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value" id="recordSize">0 MB</div>
+          <div class="stat-label">Recording</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button id="startRec" class="btn">
+        <span>⏺ Start Recording</span>
+      </button>
+      <button id="stopRec" class="btn" disabled>
+        <span>⏹ Stop Recording</span>
+      </button>
+      <a id="downloadLink" class="btn" download="tracking_recording.webm">
+        <span>⬇ Download Recording</span>
+      </a>
+    </div>
+
+    <!-- Recording Info -->
+    <div class="recording-info" id="recordingInfo">
+      <div>🔴 Recording in progress...</div>
+      <div class="recording-time" id="recordingTime">00:00</div>
+    </div>
+
+    <footer>
+      Powered by <a href="https://github.com/justadudewhohacks/face-api.js" target="_blank">face-api.js</a> + 
+      <a href="https://google.github.io/mediapipe/" target="_blank">MediaPipe Hands</a>
+      <br>
+      Built with precision and performance for professional digital products
+    </footer>
   </div>
 
-  <div id="voiceMeter">
-    <div id="voiceLevel"></div>
-  </div>
+  <!-- External Libraries -->
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1620248357/camera_utils.js"></script>
 
-  <div class="controls">
-    <button id="startRec">Start Recording</button>
-    <button id="stopRec">Stop Recording</button>
-    <a id="downloadLink">Download Recording</a>
-  </div>
-
-  <footer>Powered by face-api.js</footer>
-
-  <!-- Face detection library -->
-  <script defer src="https://unpkg.com/face-api.js"></script>
   <script>
-    const info = document.getElementById('info');
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const voiceLevel = document.getElementById('voiceLevel');
-    const startBtn = document.getElementById('startRec');
-    const stopBtn = document.getElementById('stopRec');
-    const downloadLink = document.getElementById('downloadLink');
+    // ==================== GLOBAL STATE ====================
+    const state = {
+      mediaRecorder: null,
+      recordedChunks: [],
+      faceTickActive: false,
+      recordingStartTime: null,
+      recordingInterval: null,
+      handsInstance: null,
+      cameraInstance: null,
+      audioContext: null,
+      frameCount: 0,
+      facesCount: 0,
+      handsCount: 0,
+      lastFpsUpdate: Date.now(),
+      currentFps: 0
+    };
 
-    let mediaRecorder;
-    let recordedChunks = [];
-    let audioCtx;
-    let analyser;
-    let audioSource;
+    // ==================== DOM ELEMENTS ====================
+    const DOM = {
+      info: document.getElementById('info'),
+      video: document.getElementById('video'),
+      canvas: document.getElementById('canvas'),
+      voiceLevel: document.getElementById('voiceLevel'),
+      voicePercent: document.getElementById('voicePercent'),
+      startBtn: document.getElementById('startRec'),
+      stopBtn: document.getElementById('stopRec'),
+      downloadLink: document.getElementById('downloadLink'),
+      recordingInfo: document.getElementById('recordingInfo'),
+      recordingTime: document.getElementById('recordingTime'),
+      statusDot: document.getElementById('statusDot'),
+      statusText: document.getElementById('statusText'),
+      errorContainer: document.getElementById('errorContainer'),
+      fps: document.getElementById('fps'),
+      facesDetected: document.getElementById('facesDetected'),
+      handsDetected: document.getElementById('handsDetected'),
+      totalFrames: document.getElementById('totalFrames'),
+      recordSize: document.getElementById('recordSize')
+    };
 
-    // --- Browser + OS detection ---
-    function detectBrowserAndOS() {
-      const uaData = navigator.userAgentData;
-      const browser = uaData
-        ? (uaData.brands || []).map(b => `${b.brand} ${b.version || ''}`.trim()).join(', ')
-        : navigator.userAgent;
-      const os = uaData ? uaData.platform : navigator.platform;
-
-      info.innerHTML += `<p><b>Browser:</b> ${browser}</p>`;
-      info.innerHTML += `<p><b>Operating system:</b> ${os}</p>`;
-      info.innerHTML += `<p><b>CPU cores:</b> ${navigator.hardwareConcurrency || 'N/A'}</p>`;
-      info.innerHTML += `<p><b>RAM:</b> ${navigator.deviceMemory || 'N/A'} GB</p>`;
-      const conn = navigator.connection || {};
-      info.innerHTML += `<p><b>Network:</b> ${conn.effectiveType || 'Unknown'} ${conn.downlink ? `(${conn.downlink} Mbps)` : ''}</p>`;
+    // ==================== UTILITY FUNCTIONS ====================
+    function showError(message, isSuccess = false) {
+      DOM.errorContainer.textContent = message;
+      DOM.errorContainer.classList.add('show');
+      
+      if (isSuccess) {
+        DOM.errorContainer.style.background = 'rgba(0, 255, 135, 0.1)';
+        DOM.errorContainer.style.borderColor = 'rgba(0, 255, 135, 0.5)';
+        DOM.errorContainer.style.color = '#00ff87';
+      } else {
+        DOM.errorContainer.style.background = 'rgba(255, 68, 68, 0.1)';
+        DOM.errorContainer.style.borderColor = 'rgba(255, 68, 68, 0.5)';
+        DOM.errorContainer.style.color = '#ff6b6b';
+      }
+      
+      setTimeout(() => {
+        DOM.errorContainer.classList.remove('show');
+      }, 5000);
     }
 
-    // --- Webcam + audio ---
-    async function startVideo() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user' },
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-        });
-        video.srcObject = stream;
-        setupVoiceMeter(stream);
-      } catch (err) {
-        info.innerHTML += `<p><b>Webcam:</b> Access denied ❌</p>`;
-        console.error(err);
+    function updateStatus(text, isActive = false) {
+      DOM.statusText.textContent = text;
+      DOM.statusDot.classList.toggle('active', isActive);
+    }
+
+    function updateStats() {
+      DOM.facesDetected.textContent = state.facesCount;
+      DOM.handsDetected.textContent = state.handsCount;
+      DOM.totalFrames.textContent = state.frameCount;
+      
+      // Update FPS
+      const now = Date.now();
+      if (now - state.lastFpsUpdate >= 1000) {
+        DOM.fps.textContent = state.currentFps;
+        state.lastFpsUpdate = now;
       }
     }
 
+    // ==================== SYSTEM INFORMATION ====================
+    async function detectBrowserAndOS() {
+      try {
+        const uaData = navigator.userAgentData;
+        let browser = 'Unknown';
+        
+        if (uaData) {
+          browser = (uaData.brands || [])
+            .map(b => `${b.brand} ${b.version || ''}`)
+            .join(', ');
+        } else {
+          const ua = navigator.userAgent;
+          if (ua.includes('Chrome')) browser = 'Chrome';
+          else if (ua.includes('Firefox')) browser = 'Firefox';
+          else if (ua.includes('Safari')) browser = 'Safari';
+          else if (ua.includes('Edge')) browser = 'Edge';
+        }
+        
+        const os = uaData ? uaData.platform : navigator.platform;
+        const cores = navigator.hardwareConcurrency || 'N/A';
+        const memory = navigator.deviceMemory ? `${navigator.deviceMemory} GB` : 'N/A';
+        
+        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
+        const network = conn.effectiveType || 'Unknown';
+        const downlink = conn.downlink ? `${conn.downlink} Mbps` : '';
+        
+        const screenRes = `${window.screen.width} × ${window.screen.height}`;
+        const pixelRatio = `${window.devicePixelRatio}x`;
+        const colorDepth = `${window.screen.colorDepth}-bit`;
+
+        DOM.info.innerHTML = `
+          <p><b>Browser:</b> <span>${browser}</span></p>
+          <p><b>OS:</b> <span>${os}</span></p>
+          <p><b>CPU Cores:</b> <span>${cores}</span></p>
+          <p><b>RAM:</b> <span>${memory}</span></p>
+          <p><b>Network:</b> <span>${network} ${downlink}</span></p>
+          <p><b>Screen:</b> <span>${screenRes}</span></p>
+          <p><b>Pixel Ratio:</b> <span>${pixelRatio}</span></p>
+          <p><b>Color Depth:</b> <span>${colorDepth}</span></p>
+        `;
+      } catch (error) {
+        console.error('System info error:', error);
+        DOM.info.innerHTML = '<p style="color: #ff6b6b;">Unable to detect system information</p>';
+      }
+    }
+
+    // ==================== CANVAS MANAGEMENT ====================
+    function syncCanvasToVideo() {
+      const w = DOM.video.videoWidth || 640;
+      const h = DOM.video.videoHeight || 480;
+      DOM.canvas.width = w;
+      DOM.canvas.height = h;
+    }
+
+    // ==================== WEBCAM SETUP =================
+    async function startVideo() {
+      try {
+        updateStatus('Requesting camera and microphone access...', false);
+        
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'user',
+            width: { ideal: 1280, max: 1920 },
+            height: { ideal: 720, max: 1080 }
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 48000
+          }
+        });
+
+        DOM.video.srcObject = stream;
+        
+        DOM.video.addEventListener('loadedmetadata', () => {
+          syncCanvasToVideo();
+          updateStatus('✓ Camera active - Tracking enabled', true);
+          showError('Camera and microphone ready!', true);
+        }, { once: true });
+
+        setupVoiceMeter(stream);
+        return stream;
+        
+      } catch (error) {
+        console.error('Camera error:', error);
+        showError('⚠ Camera/microphone access denied. Please enable permissions.');
+        updateStatus('Camera error', false);
+        throw error;
+      }
+    }
+
+    // ==================== FACE TRACKING ====================
     async function loadFaceModels() {
-      await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+      try {
+        updateStatus('Loading AI models...', false);
+        
+        const modelPath = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model';
+        await faceapi.nets.tinyFaceDetector.loadFromUri(modelPath);
+        
+        console.log('✓ Face detection models loaded');
+      } catch (error) {
+        console.error('Model loading error:', error);
+        showError('Failed to load AI models. Some features may not work.');
+      }
     }
 
     function runFaceTracking() {
-      const displaySize = { width: video.videoWidth || 640, height: video.videoHeight || 480 };
-      canvas.width = displaySize.width;
-      canvas.height = displaySize.height;
+      if (state.faceTickActive) return;
+      state.faceTickActive = true;
+      
+      const ctx = DOM.canvas.getContext('2d', { alpha: false });
+      const options = new faceapi.TinyFaceDetectorOptions({
+        inputSize: 256,
+        scoreThreshold: 0.5
+      });
+
+      let frameCounter = 0;
+      let lastTime = Date.now();
 
       async function tick() {
-        if (video.readyState >= 2) {
-          const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 256, scoreThreshold: 0.5 });
-          const detections = await faceapi.detectAllFaces(video, options);
+        try {
+          if (DOM.video.readyState >= 2) {
+            state.frameCount++;
+            frameCounter++;
+            
+            // Calculate FPS
+            const now = Date.now();
+            if (now - lastTime >= 1000) {
+              state.currentFps = frameCounter;
+              frameCounter = 0;
+              lastTime = now;
+            }
 
-          const ctx = canvas.getContext('2d');
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, DOM.canvas.width, DOM.canvas.height);
 
-          // Flip context to match mirrored video
-          ctx.save();
-          ctx.translate(canvas.width, 0);
-          ctx.scale(-1, 1);
+            // Mirror for drawing
+            ctx.save();
+            ctx.translate(DOM.canvas.width, 0);
+            ctx.scale(-1, 1);
 
-          detections.forEach((det, i) => {
-            const { x, y, width, height } = det.box;
-            ctx.strokeStyle = "rgba(0, 255, 0, 0.9)";
-            ctx.lineWidth = 3;
-            ctx.shadowColor = "rgba(0, 255, 0, 0.6)";
-            ctx.shadowBlur = 12;
-            ctx.strokeRect(x, y, width, height);
+            // Detect faces
+            const detections = await faceapi.detectAllFaces(DOM.video, options);
+            state.facesCount = detections.length;
 
-            ctx.fillStyle = "#4cc9f0";
-            ctx.font = "16px Segoe UI";
-            ctx.fillText(`Face ${i+1}`, x, y - 5);
-          });
+            // Draw face boxes
+            detections.forEach((det, idx) => {
+              const { x, y, width, height } = det.box;
+              const score = (det.score * 100).toFixed(0);
+              
+              // Box
+              ctx.strokeStyle = "rgba(0, 255, 135, 0.9)";
+              ctx.lineWidth = 3;
+              ctx.shadowColor = "rgba(0, 255, 135, 0.6)";
+              ctx.shadowBlur = 15;
+              ctx.strokeRect(x, y, width, height);
+              
+              // Label background
+              ctx.fillStyle = "rgba(0, 255, 135, 0.9)";
+              ctx.fillRect(x, y - 25, 120, 25);
+              
+              // Label text
+              ctx.shadowBlur = 0;
+              ctx.fillStyle = "#000";
+              ctx.font = "bold 14px Arial";
+              ctx.fillText(`Face ${idx + 1} (${score}%)`, x + 5, y - 8);
+            });
 
-          ctx.restore();
+            ctx.restore();
+            updateStats();
+          }
+        } catch (error) {
+          console.error('Face tracking error:', error);
         }
+        
         requestAnimationFrame(tick);
       }
+      
       tick();
     }
 
-    // --- Voice Meter ---
-    function setupVoiceMeter(stream) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      // Resume context on first user gesture (mobile/autoplay policies)
-      document.body.addEventListener('click', () => {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-      }, { once: true });
-
-      audioSource = audioCtx.createMediaStreamSource(stream);
-      analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
-      audioSource.connect(analyser);
-
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-      function updateMeter() {
-        analyser.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-        const avg = sum / dataArray.length;
-        const level = Math.min(100, (avg / 255) * 100);
-        voiceLevel.style.width = level + "%";
-        requestAnimationFrame(updateMeter);
-      }
-      updateMeter();
-    }
-
-    // --- Recording ---
-    function startRecording() {
-      if (!video.srcObject) return;
-
-      const canvasStream = canvas.captureStream(30); // 30 fps overlays
-      const audioTracks = video.srcObject.getAudioTracks();
-
-      const combinedStream = new MediaStream([
-        ...canvasStream.getTracks(),
-        ...audioTracks
-      ]);
-
-      recordedChunks = [];
+    // ==================== HAND TRACKING ====================
+    function setupHandTracking() {
       try {
-        mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9,opus' });
-      } catch {
-        mediaRecorder = new MediaRecorder(combinedStream); // fallback
+        updateStatus('Initializing hand tracking...', false);
+        
+        state.handsInstance = new Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${file}`
+        });
+
+        state.handsInstance.setOptions({
+          maxNumHands: 2,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.7,
+          minTrackingConfidence: 0.7
+        });
+
+        state.handsInstance.onResults(results => {
+          const ctx = DOM.canvas.getContext('2d', { alpha: false });
+          
+          ctx.save();
+          ctx.translate(DOM.canvas.width, 0);
+          ctx.scale(-1, 1);
+
+          if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+            state.handsCount = results.multiHandLandmarks.length;
+            
+            results.multiHandLandmarks.forEach((landmarks, index) => {
+              const xs = landmarks.map(l => l.x * DOM.canvas.width);
+              const ys = landmarks.map(l => l.y * DOM.canvas.height);
+              const minX = Math.min(...xs);
+              const maxX = Math.max(...xs);
+              const minY = Math.min(...ys);
+              const maxY = Math.max(...ys);
+
+              const handedness = results.multiHandedness ? results.multiHandedness[index].label : 'Hand';
+              const score = results.multiHandedness ? 
+                (results.multiHandedness[index].score * 100).toFixed(0) : '?';
+
+              // Box
+              ctx.strokeStyle = "rgba(255, 215, 0, 0.9)";
+              ctx.lineWidth = 3;
+              ctx.shadowColor = "rgba(255, 215, 0, 0.6)";
+              ctx.shadowBlur = 15;
+              ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+
+              // Label background
+              ctx.fillStyle = "rgba(255, 215, 0, 0.9)";
+              ctx.fillRect(minX, minY - 25, 120, 25);
+
+              // Label text
+              ctx.shadowBlur = 0;
+              ctx.fillStyle = "#000";
+              ctx.font = "bold 14px Arial";
+              ctx.fillText(`${handedness} (${score}%)`, minX + 5, minY - 8);
+            });
+          } else {
+            state.handsCount = 0;
+          }
+
+          ctx.restore();
+        });
+
+        state.cameraInstance = new Camera(DOM.video, {
+          onFrame: async () => {
+            await state.handsInstance.send({ image: DOM.video });
+          },
+          width: 640,
+          height: 480
+        });
+        
+        state.cameraInstance.start();
+        console.log('✓ Hand tracking initialized');
+        
+      } catch (error) {
+        console.error('Hand tracking error:', error);
+        showError('Hand tracking initialization failed.');
       }
-
-      mediaRecorder.ondataavailable = e => {
-        if (e.data && e.data.size > 0) recordedChunks.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunks, { type: 'video/webm' });
-        const url = URL.createObjectURL(blob);
-        downloadLink.href = url;
-        downloadLink.download = 'face_tracking_recording.webm';
-        downloadLink.style.display = 'inline';
-      };
-
-      mediaRecorder.start(200); // collect data in small chunks
-      startBtn.disabled = true;
-      stopBtn.disabled = false;
-      downloadLink.style.display = 'none';
     }
 
-    function stopRecording() {
-      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-        mediaRecorder.stop();
+    // ==================== VOICE METER ====================
+    function setupVoiceMeter(stream) {
+      try {
+        state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        
+        const resumeAudio = () => {
+          if (state.audioContext.state === 'suspended') {
+            state.audioContext.resume();
+          }
+        };
+        
+        document.body.addEventListener('click', resumeAudio, { once: true });
+        document.body.addEventListener('touchstart', resumeAudio, { once: true });
+
+        const source = state.audioContext.createMediaStreamSource(stream);
+        const analyser = state.audioContext.createAnalyser();
+        analyser.fftSize = 1024;
+        analyser.smoothingTimeConstant = 0.8;
+        source.connect(analyser);
+        
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        function updateMeter() {
+          analyser.getByteFrequencyData(dataArray);
+          
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            sum += dataArray[i];
+          }
+          
+          const avg = sum / dataArray.length;
+          const level = Math.min(100, (avg / 255) * 100 * 1.8);
+          
+          DOM.voiceLevel.style.width = level + "%";
+          DOM.voicePercent.textContent = Math.round(level) + "%";
+          
+          requestAnimationFrame(updateMeter);
+        }
+        
+        updateMeter();
+      } catch (error) {
+        console.error('Voice meter error:', error);
+        DOM.voicePercent.textContent = 'N/A';
       }
-      startBtn.disabled = false;
-      stopBtn.disabled = true;
     }
-
-    // --- Wire up controls ---
-    startBtn.addEventListener('click', startRecording);
-    stopBtn.addEventListener('click', stopRecording);
-
-    // --- Init ---
-    detectBrowserAndOS();
-    (async () => {
-      await startVideo();
-      await loadFaceModels();
-      video.addEventListener('loadeddata', runFaceTracking, { once: true });
-    })();
   </script>
 </body>
 </html>
