@@ -93,7 +93,7 @@
     <div class="card">
       <h2>Webcam Face Tracking</h2>
       <div class="video-wrapper">
-        <video id="video" autoplay playsinline></video>
+        <video id="video" autoplay playsinline muted></video> <!-- 🔇 muted -->
         <canvas id="canvas"></canvas>
       </div>
     </div>
@@ -216,6 +216,9 @@
       if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
       }
+      // Optional: stop audio tracks completely
+      // const stream = video.srcObject;
+      // if (stream) stream.getAudioTracks().forEach(track => track.stop());
     }
 
     document.getElementById('startRec').addEventListener('click', startRecording);
