@@ -73,7 +73,10 @@
       background: #4cc9f0;
       color: #000;
       font-weight: bold;
-      cursor: pointer: none;
+      cursor: pointer;
+    }
+    .controls a {
+      text-decoration: none;
       display: none;
     }
     #voiceMeter {
@@ -130,8 +133,15 @@
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const voiceLevel = document.getElementById('voiceLevel');
+    const startBtn = document.getElementById('startRec');
+    const stopBtn = document.getElementById('stopRec');
+    const downloadLink = document.getElementById('downloadLink');
 
-    let audioStream; // keep reference for voice meter
+    let mediaRecorder;
+    let recordedChunks = [];
+    let audioCtx;
+    let analyser;
+    let audioSource;
 
     // --- Browser + OS detection ---
     function detectBrowserAndOS() {
@@ -145,17 +155,22 @@
       info.innerHTML += `<p><b>Operating system:</b> ${os}</p>`;
       info.innerHTML += `<p><b>CPU cores:</b> ${navigator.hardwareConcurrency || 'N/A'}</p>`;
       info.innerHTML += `<p><b>RAM:</b> ${navigator.deviceMemory || 'N/A'} GB</p>`;
+      const conn = navigator.connection || {};
+      info.innerHTML += `<p><b>Network:</b> ${conn.effectiveType || 'Unknown'} ${conn.downlink ? `(${conn.downlink} Mbps)` : ''}</p>`;
     }
 
-    // --- Webcam + face tracking ---
+    // --- Webcam + audio ---
     async function startVideo() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user' },
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+        });
         video.srcObject = stream;
-        audioStream = stream;
-        setupVoiceMeter(stream); // start voice meter
+        setupVoiceMeter(stream);
       } catch (err) {
         info.innerHTML += `<p><b>Webcam:</b> Access denied ❌</p>`;
+        console.error(err);
       }
     }
 
@@ -203,11 +218,16 @@
 
     // --- Voice Meter ---
     function setupVoiceMeter(stream) {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioCtx.createMediaStreamSource(stream);
-      const analyser = audioCtx.createAnalyser();
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // Resume context on first user gesture (mobile/autoplay policies)
+      document.body.addEventListener('click', () => {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+      }, { once: true });
+
+      audioSource = audioCtx.createMediaStreamSource(stream);
+      analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
-      source.connect(analyser);
+      audioSource.connect(analyser);
 
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
@@ -224,26 +244,61 @@
     }
 
     // --- Recording ---
-    let mediaRecorder;
-    let recordedChunks = [];
-
     function startRecording() {
-      const canvasStream = canvas.captureStream(30); // 30 fps
-      const videoStream = video.srcObject;
+      if (!video.srcObject) return;
+
+      const canvasStream = canvas.captureStream(30); // 30 fps overlays
+      const audioTracks = video.srcObject.getAudioTracks();
 
       const combinedStream = new MediaStream([
         ...canvasStream.getTracks(),
-        ...videoStream.getAudioTracks()
+        ...audioTracks
       ]);
 
-      mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
+      recordedChunks = [];
+      try {
+        mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9,opus' });
+      } catch {
+        mediaRecorder = new MediaRecorder(combinedStream); // fallback
+      }
 
       mediaRecorder.ondataavailable = e => {
-        if (e.data.size > 0) recordedChunks.push(e.data);
+        if (e.data && e.data.size > 0) recordedChunks.push(e.data);
       };
 
       mediaRecorder.onstop = () => {
         const blob = new Blob(recordedChunks, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
-        const link = document.getElementById('downloadLink');
-        link.href = url;
+        downloadLink.href = url;
+        downloadLink.download = 'face_tracking_recording.webm';
+        downloadLink.style.display = 'inline';
+      };
+
+      mediaRecorder.start(200); // collect data in small chunks
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      downloadLink.style.display = 'none';
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    }
+
+    // --- Wire up controls ---
+    startBtn.addEventListener('click', startRecording);
+    stopBtn.addEventListener('click', stopRecording);
+
+    // --- Init ---
+    detectBrowserAndOS();
+    (async () => {
+      await startVideo();
+      await loadFaceModels();
+      video.addEventListener('loadeddata', runFaceTracking, { once: true });
+    })();
+  </script>
+</body>
+</html>
