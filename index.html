@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Face Tracking + System Info</title>
+  <title>Face Tracking + System Info + Recording</title>
   <style>
     body {
       font-family: "Segoe UI", Roboto, Arial, sans-serif;
@@ -53,6 +53,7 @@
       width: 640px;
       height: 480px;
       border-radius: 12px;
+      transform: scaleX(-1); /* Mirror horizontally */
     }
     footer {
       text-align: center;
@@ -60,10 +61,28 @@
       font-size: 13px;
       color: #aaa;
     }
+    .controls {
+      text-align: center;
+      margin-top: 20px;
+    }
+    .controls button, .controls a {
+      margin: 0 10px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #4cc9f0;
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .controls a {
+      text-decoration: none;
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <h1>Live Multi‑Face Tracking + System Info</h1>
+  <h1>Live Multi‑Face Tracking + System Info + Recording</h1>
 
   <div class="grid">
     <div class="card">
@@ -80,7 +99,13 @@
     </div>
   </div>
 
-  <footer>Powered by face-api</footer>
+  <div class="controls">
+    <button id="startRec">Start Recording</button>
+    <button id="stopRec">Stop Recording</button>
+    <a id="downloadLink">Download Recording</a>
+  </div>
+
+  <footer>Powered by face-api.js</footer>
 
   <!-- Face detection library -->
   <script defer src="https://unpkg.com/face-api.js"></script>
@@ -99,12 +124,14 @@
 
       info.innerHTML += `<p><b>Browser:</b> ${browser}</p>`;
       info.innerHTML += `<p><b>Operating system:</b> ${os}</p>`;
+      info.innerHTML += `<p><b>CPU cores:</b> ${navigator.hardwareConcurrency || 'N/A'}</p>`;
+      info.innerHTML += `<p><b>RAM:</b> ${navigator.deviceMemory || 'N/A'} GB</p>`;
     }
 
     // --- Webcam + face tracking ---
     async function startVideo() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
         video.srcObject = stream;
       } catch (err) {
         info.innerHTML += `<p><b>Webcam:</b> Access denied ❌</p>`;
@@ -128,20 +155,71 @@
           const ctx = canvas.getContext('2d');
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          // Draw green boxes for each detected face
-          detections.forEach(det => {
+          // Flip context to match mirrored video
+          ctx.save();
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+
+          detections.forEach((det, i) => {
             const { x, y, width, height } = det.box;
             ctx.strokeStyle = "rgba(0, 255, 0, 0.9)";
             ctx.lineWidth = 3;
             ctx.shadowColor = "rgba(0, 255, 0, 0.6)";
             ctx.shadowBlur = 12;
             ctx.strokeRect(x, y, width, height);
+
+            ctx.fillStyle = "#4cc9f0";
+            ctx.font = "16px Segoe UI";
+            ctx.fillText(`Face ${i+1}`, x, y - 5);
           });
+
+          ctx.restore();
         }
         requestAnimationFrame(tick);
       }
       tick();
     }
+
+    // --- Recording ---
+    let mediaRecorder;
+    let recordedChunks = [];
+
+    function startRecording() {
+      const canvasStream = canvas.captureStream(30); // 30 fps
+      const videoStream = video.srcObject;
+
+      const combinedStream = new MediaStream([
+        ...canvasStream.getTracks(),
+        ...videoStream.getAudioTracks()
+      ]);
+
+      mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
+
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const link = document.getElementById('downloadLink');
+        link.href = url;
+        link.download = 'face_tracking_recording.webm';
+        link.style.display = 'inline';
+        recordedChunks = [];
+      };
+
+      mediaRecorder.start();
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+    }
+
+    document.getElementById('startRec').addEventListener('click', startRecording);
+    document.getElementById('stopRec').addEventListener('click', stopRecording);
 
     // --- Init ---
     detectBrowserAndOS();
