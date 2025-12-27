@@ -1,189 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<title>AI Face & Hand Tracker Pro</title>
+<title>AI Face & Hand Tracker</title>
 
-<!-- Libraries -->
+<!-- AI Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1620248357/camera_utils.js"></script>
 
 <style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Segoe UI", system-ui;
+
+/* ===== GLOBAL ===== */
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:"Segoe UI",system-ui;
 }
 
-body {
-  background: radial-gradient(circle at top, #1b0b2e, #05010a);
-  color: #eef0ff;
-  min-height: 100vh;
-  padding: 20px;
+body{
+  background:radial-gradient(circle at top,#1a0b2e,#05010a);
+  color:#eaf0ff;
+  min-height:100vh;
+  padding:20px;
 }
 
-/* Layout */
-
-.container {
-  display: grid;
-  grid-template-columns: 340px 1fr;
-  gap: 20px;
-  max-width: 1400px;
-  margin: auto;
+/* ===== TITLE ===== */
+h1{
+  font-size:42px;
+  font-weight:800;
+  text-align:center;
+  margin-bottom:18px;
+  background:linear-gradient(90deg,#7f5cff,#00d4ff,#a855f7);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  letter-spacing:2px;
+  text-shadow:0 0 30px rgba(120,90,255,.6),0 0 60px rgba(0,200,255,.3);
 }
 
-@media (max-width: 900px) {
-  .container {
-    grid-template-columns: 1fr;
-  }
+/* ===== LAYOUT ===== */
+.container{
+  display:grid;
+  grid-template-columns:340px 1fr;
+  gap:20px;
+  max-width:1400px;
+  margin:auto;
 }
 
-/* Glass Panel */
-
-.panel {
-  background: rgba(40, 20, 80, 0.55);
-  backdrop-filter: blur(28px);
-  border-radius: 22px;
-  padding: 24px;
-  border: 1px solid rgba(160, 120, 255, 0.25);
-  box-shadow: 
-    0 0 40px rgba(140, 90, 255, 0.25),
-    inset 0 0 20px rgba(255, 255, 255, 0.05);
+@media(max-width:900px){
+  .container{grid-template-columns:1fr;}
 }
 
-h3 {
-  font-size: 20px;
-  margin-bottom: 16px;
-  color: #b58bff;
-  letter-spacing: 0.6px;
+/* ===== GLASS PANEL ===== */
+.panel{
+  background:rgba(40,20,80,.55);
+  backdrop-filter:blur(28px);
+  border-radius:22px;
+  padding:24px;
+  border:1px solid rgba(160,120,255,.25);
+  box-shadow:0 0 40px rgba(140,90,255,.25),inset 0 0 20px rgba(255,255,255,.05);
 }
 
-p {
-  display: flex;
-  justify-content: space-between;
-  margin: 12px 0;
-  font-size: 15px;
+h3{
+  font-size:20px;
+  margin-bottom:16px;
+  color:#b58bff;
+  letter-spacing:1.5px;
+  text-shadow:0 0 15px rgba(140,100,255,.6);
+  text-transform:uppercase;
 }
 
-.stat {
-  color: #7fd7ff;
-  font-weight: 600;
+p{
+  display:flex;
+  justify-content:space-between;
+  margin:12px 0;
+  font-size:15px;
+  color:#cfd6ff;
 }
 
-hr {
-  border: none;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #7f5cff, transparent);
-  margin: 18px 0;
+.stat{
+  color:#7fd7ff;
+  font-weight:700;
+  text-shadow:0 0 12px rgba(0,200,255,.7);
 }
 
-/* Camera */
-
-.video-wrapper {
-  position: relative;
-  border-radius: 28px;
-  overflow: hidden;
-  background: black;
-  box-shadow:
-    0 0 120px rgba(120, 80, 255, 0.45),
-    0 0 40px rgba(0, 200, 255, 0.25);
+/* ===== VIDEO ===== */
+.video-wrapper{
+  position:relative;
+  border-radius:28px;
+  overflow:hidden;
+  background:black;
+  box-shadow:0 0 120px rgba(120,80,255,.45),0 0 40px rgba(0,200,255,.25);
 }
 
-video,
-canvas {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+video,canvas{
+  position:absolute;
+  width:100%;
+  height:100%;
+  object-fit:cover;
 }
 
-video {
-  transform: scaleX(-1);
+video{transform:scaleX(-1);}
+
+/* ===== VOICE ===== */
+#voiceMeter{
+  height:10px;
+  background:rgba(255,255,255,.1);
+  border-radius:50px;
+  overflow:hidden;
+  margin:18px 0;
 }
 
-/* Audio meter */
-
-#voiceMeter {
-  height: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50px;
-  overflow: hidden;
-  margin: 18px 0;
+#voiceLevel{
+  height:100%;
+  width:0;
+  background:linear-gradient(90deg,#7f5cff,#00d4ff);
+  box-shadow:0 0 20px rgba(0,200,255,.7);
 }
 
-#voiceLevel {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, #7f5cff, #00d4ff);
-  box-shadow: 0 0 20px rgba(0, 200, 255, 0.7);
+/* ===== BUTTONS ===== */
+button{
+  width:100%;
+  margin-top:14px;
+  background:linear-gradient(135deg,#7f5cff,#00d4ff);
+  border:none;
+  border-radius:16px;
+  padding:14px;
+  font-weight:700;
+  color:white;
+  cursor:pointer;
+  box-shadow:0 0 25px rgba(120,80,255,.6);
 }
 
-/* Buttons */
+button:hover{transform:scale(1.04);}
+button:disabled{opacity:.4;box-shadow:none;}
 
-button {
-  width: 100%;
-  margin-top: 14px;
-  background: linear-gradient(135deg, #7f5cff, #00d4ff);
-  border: none;
-  border-radius: 16px;
-  padding: 14px;
-  font-weight: 700;
-  color: white;
-  cursor: pointer;
+a{
+  display:block;
+  margin-top:18px;
+  text-align:center;
+  color:#9bdcff;
+  text-decoration:none;
+  font-weight:600;
 }
 
-button:disabled {
-  opacity: 0.35;
-}
-
-a {
-  display: block;
-  margin-top: 18px;
-  text-align: center;
-  color: #9bdcff;
-  text-decoration: none;
-  font-weight: 600;
-}
 </style>
 </head>
 
 <body>
 
+<h1>AI Face & Hand Tracker</h1>
+
 <div class="container">
 
-  <!-- Left Panel -->
   <div class="panel">
     <h3>System</h3>
-
     <p>OS <span class="stat" id="os"></span></p>
     <p>Browser <span class="stat" id="browser"></span></p>
     <p>CPU <span class="stat" id="cores"></span></p>
     <p>RAM <span class="stat" id="ram"></span> GB</p>
 
-    <hr>
-
+    <h3>Tracking</h3>
     <p>Faces <span class="stat" id="faces">0</span></p>
     <p>Hands <span class="stat" id="hands">0</span></p>
     <p>FPS <span class="stat" id="fps">0</span></p>
 
-    <div id="voiceMeter">
-      <div id="voiceLevel"></div>
-    </div>
+    <div id="voiceMeter"><div id="voiceLevel"></div></div>
 
-    <button id="startRec">⏺ Start Recording</button>
-    <button id="stopRec" disabled>⏹ Stop</button>
-
-    <a id="downloadLink" style="display:none" download="tracking.webm">
-      ⬇ Download
-    </a>
+    <button id="startRec">Start Recording</button>
+    <button id="stopRec" disabled>Stop</button>
+    <a id="downloadLink" style="display:none" download="tracking.webm">Download</a>
   </div>
 
-  <!-- Camera -->
   <div class="video-wrapper">
     <video id="video" autoplay muted playsinline></video>
     <canvas id="canvas"></canvas>
@@ -192,7 +184,6 @@ a {
 </div>
 
 <script>
-/* ----------------- VARIABLES ----------------- */
 
 const video = document.getElementById("video");
 const canvas = document.getElementById("canvas");
@@ -200,28 +191,18 @@ const ctx = canvas.getContext("2d");
 
 const facesEl = document.getElementById("faces");
 const handsEl = document.getElementById("hands");
-const fpsEl = document.getElementById("fps");
+const fpsEl   = document.getElementById("fps");
 
-let faceResults = [];
-let handResults = [];
-let fpsCount = 0;
-let lastFps = Date.now();
-let mediaRecorder;
-let chunks = [];
-let lastGesture = "";
-
-/* ----------------- SYSTEM INFO ----------------- */
-
+/* System info */
 os.textContent = navigator.platform;
-browser.textContent = navigator.userAgent.includes("Chrome") ? "Chrome" : "Other";
+browser.textContent = navigator.userAgent.includes("Chrome") ? "Chrome" : "Browser";
 cores.textContent = navigator.hardwareConcurrency;
 ram.textContent = navigator.deviceMemory || "?";
 
-/* ----------------- CAMERA ----------------- */
-
-navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+/* Camera */
+navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(stream=>{
   video.srcObject = stream;
-  video.onloadedmetadata = () => {
+  video.onloadedmetadata = ()=>{
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
   };
@@ -229,148 +210,46 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream =>
   setupRecording(stream);
 });
 
-/* ----------------- FACE AI ----------------- */
+/* Voice meter */
+function setupVoice(stream){
+  const ac = new AudioContext();
+  const src = ac.createMediaStreamSource(stream);
+  const an = ac.createAnalyser();
+  src.connect(an);
+  an.fftSize = 512;
+  const data = new Uint8Array(an.frequencyBinCount);
 
-(async () => {
-  const modelURL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model";
-  await faceapi.nets.tinyFaceDetector.loadFromUri(modelURL);
-  await faceapi.nets.ageGenderNet.loadFromUri(modelURL);
-  await faceapi.nets.faceExpressionNet.loadFromUri(modelURL);
-  detectFaces();
-})();
-
-function detectFaces() {
-  const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320 });
-  setInterval(async () => {
-    faceResults = await faceapi
-      .detectAllFaces(video, options)
-      .withAgeAndGender()
-      .withFaceExpressions();
-    facesEl.textContent = faceResults.length;
-  }, 120);
-}
-
-/* ----------------- HAND AI ----------------- */
-
-const handsAI = new Hands({
-  locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
-});
-
-handsAI.setOptions({ maxNumHands: 1 });
-
-handsAI.onResults(r => {
-  handResults = r.multiHandLandmarks || [];
-  handsEl.textContent = handResults.length;
-});
-
-new Camera(video, {
-  onFrame: () => handsAI.send({ image: video })
-}).start();
-
-/* ----------------- RENDER LOOP ----------------- */
-
-function render() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  // Faces
-  ctx.strokeStyle = "#7fd7ff";
-  ctx.lineWidth = 3;
-  faceResults.forEach(f => {
-    ctx.strokeRect(f.box.x, f.box.y, f.box.width, f.box.height);
-    const emotion = Object.entries(f.expressions).sort((a,b)=>b[1]-a[1])[0][0];
-    ctx.fillText(`${Math.round(f.age)} ${f.gender} ${emotion}`, f.box.x, f.box.y - 8);
-  });
-
-  // Hands
-  ctx.strokeStyle = "#ffd700";
-  handResults.forEach(h => {
-    const xs = h.map(p => (1 - p.x) * canvas.width);
-    const ys = h.map(p => p.y * canvas.height);
-    ctx.strokeRect(
-      Math.min(...xs),
-      Math.min(...ys),
-      Math.max(...xs) - Math.min(...xs),
-      Math.max(...ys) - Math.min(...ys)
-    );
-  });
-
-  fpsCount++;
-  if (Date.now() - lastFps > 1000) {
-    fpsEl.textContent = fpsCount;
-    fpsCount = 0;
-    lastFps = Date.now();
-  }
-
-  requestAnimationFrame(render);
-}
-
-render();
-
-/* ----------------- GESTURES ----------------- */
-
-setInterval(() => {
-  if (handResults.length) {
-    const h = handResults[0];
-    const palm = h[9].y;
-    const tips = [8, 12, 16, 20].map(i => h[i].y);
-    const open = tips.every(t => t < palm);
-
-    if (open && lastGesture !== "open") {
-      startRec.click();
-      lastGesture = "open";
-    }
-    if (!open && lastGesture !== "fist") {
-      stopRec.click();
-      lastGesture = "fist";
-    }
-  }
-}, 400);
-
-/* ----------------- VOICE ----------------- */
-
-function setupVoice(stream) {
-  const audioCtx = new AudioContext();
-  const src = audioCtx.createMediaStreamSource(stream);
-  const analyser = audioCtx.createAnalyser();
-  src.connect(analyser);
-  analyser.fftSize = 512;
-  const data = new Uint8Array(analyser.frequencyBinCount);
-
-  (function meter() {
-    analyser.getByteFrequencyData(data);
-    let avg = data.reduce((a,b)=>a+b) / data.length;
-    voiceLevel.style.width = Math.min(100, (avg / 255) * 160) + "%";
+  function meter(){
+    an.getByteFrequencyData(data);
+    let avg = data.reduce((a,b)=>a+b)/data.length;
+    voiceLevel.style.width = Math.min(100,(avg/255)*150)+"%";
     requestAnimationFrame(meter);
-  })();
+  }
+  meter();
 }
 
-/* ----------------- RECORDING ----------------- */
-
-function setupRecording(stream) {
-  startRec.onclick = () => {
-    chunks = [];
-    const mixed = new MediaStream([
-      ...canvas.captureStream(30).getVideoTracks(),
-      ...stream.getAudioTracks()
-    ]);
-    mediaRecorder = new MediaRecorder(mixed);
-    mediaRecorder.ondataavailable = e => chunks.push(e.data);
-    mediaRecorder.onstop = () => {
-      downloadLink.href = URL.createObjectURL(new Blob(chunks, { type: "video/webm" }));
-      downloadLink.style.display = "block";
+/* Recording */
+function setupRecording(stream){
+  startRec.onclick = ()=>{
+    chunks=[];
+    const mix = new MediaStream([...canvas.captureStream(30).getVideoTracks(),...stream.getAudioTracks()]);
+    mediaRecorder = new MediaRecorder(mix);
+    mediaRecorder.ondataavailable=e=>chunks.push(e.data);
+    mediaRecorder.onstop=()=>{
+      downloadLink.href = URL.createObjectURL(new Blob(chunks,{type:"video/webm"}));
+      downloadLink.style.display="block";
     };
     mediaRecorder.start();
-    startRec.disabled = true;
-    stopRec.disabled = false;
+    startRec.disabled=true;
+    stopRec.disabled=false;
   };
-
-  stopRec.onclick = () => {
+  stopRec.onclick=()=>{
     mediaRecorder.stop();
-    startRec.disabled = false;
-    stopRec.disabled = true;
+    startRec.disabled=false;
+    stopRec.disabled=true;
   };
 }
+
 </script>
 
 </body>
