@@ -1,205 +1,178 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-<title>🎥 Face + Hand Tracking System Pro</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>AI Face + Hand Tracking Pro</title>
 
-<!-- ==================== ORIGINAL CSS (UNCHANGED) ==================== -->
-<style>
-/* (YOUR CSS — NOT MODIFIED AT ALL) */
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
---primary:#00ff87;--primary-dark:#00cc6a;--secondary:#ff6b6b;
---bg-dark:#0a0a0a;--bg-medium:#1a1a2e;--bg-light:#16213e;
---text-light:#e8e8e8;--border-color:rgba(0,255,135,.2)
-}
-body{
-font-family:Segoe UI,Arial;
-background:linear-gradient(135deg,var(--bg-dark),var(--bg-medium),var(--bg-light));
-color:var(--text-light);padding:20px
-}
-h1{text-align:center;color:var(--primary);margin-bottom:20px}
-.container{max-width:1400px;margin:auto}
-.video-wrapper{
-position:relative;width:100%;max-width:640px;
-aspect-ratio:4/3;margin:auto;border-radius:16px;
-overflow:hidden;background:#000
-}
-video,canvas{
-position:absolute;top:0;left:0;width:100%;height:100%;
-object-fit:cover;transform:scaleX(-1)
-}
-.controls{text-align:center;margin:20px}
-button,a{
-padding:12px 28px;border-radius:10px;border:none;
-font-weight:bold;cursor:pointer;margin:5px
-}
-#voiceMeter{width:100%;max-width:640px;height:22px;background:#222;margin:20px auto;border-radius:12px}
-#voiceLevel{height:100%;width:0;background:linear-gradient(90deg,#00ff87,#00d4ff);border-radius:12px}
-.stats{text-align:center;margin-top:15px}
-</style>
-
-<!-- ==================== LIBRARIES ==================== -->
-<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1620248357/camera_utils.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#050505;color:#0f0;font-family:Segoe UI;padding:10px}
+.container{display:grid;grid-template-columns:320px 1fr;gap:15px;max-width:1300px;margin:auto}
+.panel{background:#111;padding:20px;border-radius:16px;box-shadow:0 0 25px #00ff87}
+.video-wrapper{position:relative;aspect-ratio:4/3;background:black;border-radius:16px;overflow:hidden}
+video,canvas{position:absolute;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+button,a{background:#00ff87;border:none;padding:10px 18px;border-radius:10px;font-weight:bold;cursor:pointer;margin-top:10px}
+#voiceMeter{width:100%;height:15px;background:#222;border-radius:10px;margin:10px 0}
+#voiceLevel{height:100%;width:0;background:linear-gradient(90deg,#00ff87,#00d4ff);border-radius:10px}
+</style>
 </head>
 
 <body>
 <div class="container">
-<h1>🎥 Face + Hand Tracking System Pro</h1>
 
-<div class="video-wrapper">
-  <video id="video" autoplay muted playsinline></video>
-  <canvas id="canvas"></canvas>
-</div>
-
+<div class="panel">
+<h3>System</h3>
+<p>OS: <span id="os"></span></p>
+<p>Browser: <span id="browser"></span></p>
+<p>CPU: <span id="cores"></span></p>
+<p>RAM: <span id="ram"></span> GB</p>
+<hr>
+<p>Faces: <span id="faces">0</span></p>
+<p>Hands: <span id="hands">0</span></p>
+<p>FPS: <span id="fps">0</span></p>
 <div id="voiceMeter"><div id="voiceLevel"></div></div>
-
-<div class="stats">
-Faces: <span id="faces">0</span> |
-Hands: <span id="hands">0</span> |
-FPS: <span id="fps">0</span>
-</div>
-
-<div class="controls">
-<button id="startRec">⏺ Start Recording</button>
-<button id="stopRec" disabled>⏹ Stop Recording</button>
-<br>
+<button id="startRec">⏺ Start</button>
+<button id="stopRec" disabled>⏹ Stop</button><br>
 <a id="downloadLink" style="display:none" download="tracking.webm">⬇ Download</a>
 </div>
+
+<div class="video-wrapper">
+<video id="video" autoplay muted playsinline></video>
+<canvas id="canvas"></canvas>
+</div>
+
 </div>
 
 <script>
-/* ==================== STATE ==================== */
 const video=document.getElementById("video");
 const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
+const facesEl=faces;
+const handsEl=hands;
+const fpsEl=fps;
 
-const facesEl=document.getElementById("faces");
-const handsEl=document.getElementById("hands");
-const fpsEl=document.getElementById("fps");
-
-let mediaRecorder,chunks=[];
+let faceResults=[],handResults=[];
 let fpsCount=0,lastFps=Date.now();
+let mediaRecorder,chunks=[],lastGesture="";
 
-/* ==================== INIT ==================== */
-window.onload=init;
+/* SYSTEM */
+os.textContent=navigator.platform;
+browser.textContent=navigator.userAgent.includes("Chrome")?"Chrome":"Other";
+cores.textContent=navigator.hardwareConcurrency;
+ram.textContent=navigator.deviceMemory||"?";
 
-async function init(){
- const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+/* CAMERA */
+navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(stream=>{
  video.srcObject=stream;
- await video.play();
- canvas.width=video.videoWidth;
- canvas.height=video.videoHeight;
-
+ video.onloadedmetadata=()=>{
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
+ };
  setupVoice(stream);
  setupRecording(stream);
- await loadFace();
- runFace();
- setupHands();
+});
+
+/* FACE MODELS */
+(async()=>{
+ const m="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model";
+ await faceapi.nets.tinyFaceDetector.loadFromUri(m);
+ await faceapi.nets.ageGenderNet.loadFromUri(m);
+ await faceapi.nets.faceExpressionNet.loadFromUri(m);
+ detectFaces();
+})();
+
+function detectFaces(){
+ const opts=new faceapi.TinyFaceDetectorOptions({inputSize:320});
+ setInterval(async()=>{
+  faceResults=await faceapi.detectAllFaces(video,opts).withAgeAndGender().withFaceExpressions();
+  facesEl.textContent=faceResults.length;
+ },120);
 }
 
-/* ==================== FACE ==================== */
-async function loadFace(){
- const url="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model";
- await faceapi.nets.tinyFaceDetector.loadFromUri(url);
+/* HANDS */
+const handsAI=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`});
+handsAI.setOptions({maxNumHands:1});
+handsAI.onResults(r=>{
+ handResults=r.multiHandLandmarks||[];
+ handsEl.textContent=handResults.length;
+});
+new Camera(video,{onFrame:()=>handsAI.send({image:video})}).start();
+
+/* RENDER */
+function render(){
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.save();ctx.translate(canvas.width,0);ctx.scale(-1,1);
+ ctx.drawImage(video,0,0,canvas.width,canvas.height);
+
+ ctx.strokeStyle="#00ff87";ctx.lineWidth=3;
+ faceResults.forEach(f=>{
+  ctx.strokeRect(f.box.x,f.box.y,f.box.width,f.box.height);
+  const e=Object.entries(f.expressions).sort((a,b)=>b[1]-a[1])[0][0];
+  ctx.fillStyle="#00ff87";
+  ctx.fillText(`${Math.round(f.age)} ${f.gender} ${e}`,f.box.x,f.box.y-8);
+ });
+
+ ctx.strokeStyle="#ffd700";
+ handResults.forEach(h=>{
+  const xs=h.map(p=>p.x*canvas.width);
+  const ys=h.map(p=>p.y*canvas.height);
+  ctx.strokeRect(Math.min(...xs),Math.min(...ys),Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys));
+ });
+
+ ctx.restore();
+ fpsCount++;
+ if(Date.now()-lastFps>1000){fpsEl.textContent=fpsCount;fpsCount=0;lastFps=Date.now();}
+ requestAnimationFrame(render);
 }
+render();
 
-function runFace(){
- const opts=new faceapi.TinyFaceDetectorOptions({inputSize:256});
- async function loop(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  ctx.save();ctx.translate(canvas.width,0);ctx.scale(-1,1);
-
-  const det=await faceapi.detectAllFaces(video,opts);
-  facesEl.textContent=det.length;
-
-  det.forEach(d=>{
-   ctx.strokeStyle="#00ff87";
-   ctx.lineWidth=3;
-   ctx.strokeRect(d.box.x,d.box.y,d.box.width,d.box.height);
-  });
-
-  ctx.restore();
-  fpsCount++;
-  if(Date.now()-lastFps>1000){
-   fpsEl.textContent=fpsCount;
-   fpsCount=0;lastFps=Date.now();
-  }
-  requestAnimationFrame(loop);
+/* GESTURE CONTROL */
+setInterval(()=>{
+ if(handResults.length){
+  const h=handResults[0];
+  const palm=h[0].y;
+  const tips=[8,12,16,20].map(i=>h[i].y);
+  const open=tips.every(t=>t<palm);
+  if(open && lastGesture!=="open"){startRec.click();lastGesture="open";}
+  if(!open && lastGesture!=="fist"){stopRec.click();lastGesture="fist";}
  }
- loop();
-}
+},400);
 
-/* ==================== HANDS ==================== */
-function setupHands(){
- const hands=new Hands({
-  locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
- });
- hands.setOptions({maxNumHands:2});
- hands.onResults(r=>{
-  if(r.multiHandLandmarks){
-   handsEl.textContent=r.multiHandLandmarks.length;
-   ctx.save();ctx.translate(canvas.width,0);ctx.scale(-1,1);
-   r.multiHandLandmarks.forEach(h=>{
-    const xs=h.map(p=>p.x*canvas.width);
-    const ys=h.map(p=>p.y*canvas.height);
-    ctx.strokeStyle="#ffd700";
-    ctx.lineWidth=3;
-    ctx.strokeRect(
-     Math.min(...xs),
-     Math.min(...ys),
-     Math.max(...xs)-Math.min(...xs),
-     Math.max(...ys)-Math.min(...ys)
-    );
-   });
-   ctx.restore();
-  } else handsEl.textContent=0;
- });
- new Camera(video,{onFrame:()=>hands.send({image:video})}).start();
-}
-
-/* ==================== VOICE ==================== */
+/* VOICE */
 function setupVoice(stream){
- const ctxA=new AudioContext();
- const src=ctxA.createMediaStreamSource(stream);
- const analyser=ctxA.createAnalyser();
- analyser.fftSize=512;
- src.connect(analyser);
- const data=new Uint8Array(analyser.frequencyBinCount);
- function meter(){
-  analyser.getByteFrequencyData(data);
+ const ac=new AudioContext();
+ const src=ac.createMediaStreamSource(stream);
+ const an=ac.createAnalyser();
+ src.connect(an);an.fftSize=512;
+ const data=new Uint8Array(an.frequencyBinCount);
+ (function m(){
+  an.getByteFrequencyData(data);
   let avg=data.reduce((a,b)=>a+b)/data.length;
-  document.getElementById("voiceLevel").style.width=Math.min(100,(avg/255)*180)+"%";
-  requestAnimationFrame(meter);
- }
- meter();
+  voiceLevel.style.width=Math.min(100,(avg/255)*160)+"%";
+  requestAnimationFrame(m);
+ })();
 }
 
-/* ==================== RECORD ==================== */
+/* RECORD */
 function setupRecording(stream){
  startRec.onclick=()=>{
   chunks=[];
-  const mix=new MediaStream([
-   ...canvas.captureStream(30).getVideoTracks(),
-   ...stream.getAudioTracks()
-  ]);
+  const mix=new MediaStream([...canvas.captureStream(30).getVideoTracks(),...stream.getAudioTracks()]);
   mediaRecorder=new MediaRecorder(mix);
   mediaRecorder.ondataavailable=e=>chunks.push(e.data);
   mediaRecorder.onstop=()=>{
-   const blob=new Blob(chunks,{type:"video/webm"});
-   downloadLink.href=URL.createObjectURL(blob);
+   downloadLink.href=URL.createObjectURL(new Blob(chunks,{type:"video/webm"}));
    downloadLink.style.display="inline";
   };
   mediaRecorder.start();
   startRec.disabled=true;stopRec.disabled=false;
  };
- stopRec.onclick=()=>{
-  mediaRecorder.stop();
-  startRec.disabled=false;stopRec.disabled=true;
- };
+ stopRec.onclick=()=>{mediaRecorder.stop();startRec.disabled=false;stopRec.disabled=true;}
 }
 </script>
 </body>
