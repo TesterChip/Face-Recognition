@@ -1,179 +1,377 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<title>AI Face + Hand Tracking Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
+<title>AI Face & Hand Tracker Pro</title>
+
+<!-- Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1620248357/camera_utils.js"></script>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#050505;color:#0f0;font-family:Segoe UI;padding:10px}
-.container{display:grid;grid-template-columns:320px 1fr;gap:15px;max-width:1300px;margin:auto}
-.panel{background:#111;padding:20px;border-radius:16px;box-shadow:0 0 25px #00ff87}
-.video-wrapper{position:relative;aspect-ratio:4/3;background:black;border-radius:16px;overflow:hidden}
-video,canvas{position:absolute;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-button,a{background:#00ff87;border:none;padding:10px 18px;border-radius:10px;font-weight:bold;cursor:pointer;margin-top:10px}
-#voiceMeter{width:100%;height:15px;background:#222;border-radius:10px;margin:10px 0}
-#voiceLevel{height:100%;width:0;background:linear-gradient(90deg,#00ff87,#00d4ff);border-radius:10px}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", system-ui;
+}
+
+body {
+  background: radial-gradient(circle at top, #1b0b2e, #05010a);
+  color: #eef0ff;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* Layout */
+
+.container {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+  max-width: 1400px;
+  margin: auto;
+}
+
+@media (max-width: 900px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Glass Panel */
+
+.panel {
+  background: rgba(40, 20, 80, 0.55);
+  backdrop-filter: blur(28px);
+  border-radius: 22px;
+  padding: 24px;
+  border: 1px solid rgba(160, 120, 255, 0.25);
+  box-shadow: 
+    0 0 40px rgba(140, 90, 255, 0.25),
+    inset 0 0 20px rgba(255, 255, 255, 0.05);
+}
+
+h3 {
+  font-size: 20px;
+  margin-bottom: 16px;
+  color: #b58bff;
+  letter-spacing: 0.6px;
+}
+
+p {
+  display: flex;
+  justify-content: space-between;
+  margin: 12px 0;
+  font-size: 15px;
+}
+
+.stat {
+  color: #7fd7ff;
+  font-weight: 600;
+}
+
+hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #7f5cff, transparent);
+  margin: 18px 0;
+}
+
+/* Camera */
+
+.video-wrapper {
+  position: relative;
+  border-radius: 28px;
+  overflow: hidden;
+  background: black;
+  box-shadow:
+    0 0 120px rgba(120, 80, 255, 0.45),
+    0 0 40px rgba(0, 200, 255, 0.25);
+}
+
+video,
+canvas {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+video {
+  transform: scaleX(-1);
+}
+
+/* Audio meter */
+
+#voiceMeter {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50px;
+  overflow: hidden;
+  margin: 18px 0;
+}
+
+#voiceLevel {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #7f5cff, #00d4ff);
+  box-shadow: 0 0 20px rgba(0, 200, 255, 0.7);
+}
+
+/* Buttons */
+
+button {
+  width: 100%;
+  margin-top: 14px;
+  background: linear-gradient(135deg, #7f5cff, #00d4ff);
+  border: none;
+  border-radius: 16px;
+  padding: 14px;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.35;
+}
+
+a {
+  display: block;
+  margin-top: 18px;
+  text-align: center;
+  color: #9bdcff;
+  text-decoration: none;
+  font-weight: 600;
+}
 </style>
 </head>
 
 <body>
+
 <div class="container">
 
-<div class="panel">
-<h3>System</h3>
-<p>OS: <span id="os"></span></p>
-<p>Browser: <span id="browser"></span></p>
-<p>CPU: <span id="cores"></span></p>
-<p>RAM: <span id="ram"></span> GB</p>
-<hr>
-<p>Faces: <span id="faces">0</span></p>
-<p>Hands: <span id="hands">0</span></p>
-<p>FPS: <span id="fps">0</span></p>
-<div id="voiceMeter"><div id="voiceLevel"></div></div>
-<button id="startRec">⏺ Start</button>
-<button id="stopRec" disabled>⏹ Stop</button><br>
-<a id="downloadLink" style="display:none" download="tracking.webm">⬇ Download</a>
-</div>
+  <!-- Left Panel -->
+  <div class="panel">
+    <h3>System</h3>
 
-<div class="video-wrapper">
-<video id="video" autoplay muted playsinline></video>
-<canvas id="canvas"></canvas>
-</div>
+    <p>OS <span class="stat" id="os"></span></p>
+    <p>Browser <span class="stat" id="browser"></span></p>
+    <p>CPU <span class="stat" id="cores"></span></p>
+    <p>RAM <span class="stat" id="ram"></span> GB</p>
+
+    <hr>
+
+    <p>Faces <span class="stat" id="faces">0</span></p>
+    <p>Hands <span class="stat" id="hands">0</span></p>
+    <p>FPS <span class="stat" id="fps">0</span></p>
+
+    <div id="voiceMeter">
+      <div id="voiceLevel"></div>
+    </div>
+
+    <button id="startRec">⏺ Start Recording</button>
+    <button id="stopRec" disabled>⏹ Stop</button>
+
+    <a id="downloadLink" style="display:none" download="tracking.webm">
+      ⬇ Download
+    </a>
+  </div>
+
+  <!-- Camera -->
+  <div class="video-wrapper">
+    <video id="video" autoplay muted playsinline></video>
+    <canvas id="canvas"></canvas>
+  </div>
 
 </div>
 
 <script>
-const video=document.getElementById("video");
-const canvas=document.getElementById("canvas");
-const ctx=canvas.getContext("2d");
-const facesEl=faces;
-const handsEl=hands;
-const fpsEl=fps;
+/* ----------------- VARIABLES ----------------- */
 
-let faceResults=[],handResults=[];
-let fpsCount=0,lastFps=Date.now();
-let mediaRecorder,chunks=[],lastGesture="";
+const video = document.getElementById("video");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-/* SYSTEM */
-os.textContent=navigator.platform;
-browser.textContent=navigator.userAgent.includes("Chrome")?"Chrome":"Other";
-cores.textContent=navigator.hardwareConcurrency;
-ram.textContent=navigator.deviceMemory||"?";
+const facesEl = document.getElementById("faces");
+const handsEl = document.getElementById("hands");
+const fpsEl = document.getElementById("fps");
 
-/* CAMERA */
-navigator.mediaDevices.getUserMedia({video:true,audio:true}).then(stream=>{
- video.srcObject=stream;
- video.onloadedmetadata=()=>{
-  canvas.width=video.videoWidth;
-  canvas.height=video.videoHeight;
- };
- setupVoice(stream);
- setupRecording(stream);
+let faceResults = [];
+let handResults = [];
+let fpsCount = 0;
+let lastFps = Date.now();
+let mediaRecorder;
+let chunks = [];
+let lastGesture = "";
+
+/* ----------------- SYSTEM INFO ----------------- */
+
+os.textContent = navigator.platform;
+browser.textContent = navigator.userAgent.includes("Chrome") ? "Chrome" : "Other";
+cores.textContent = navigator.hardwareConcurrency;
+ram.textContent = navigator.deviceMemory || "?";
+
+/* ----------------- CAMERA ----------------- */
+
+navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then(stream => {
+  video.srcObject = stream;
+  video.onloadedmetadata = () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+  };
+  setupVoice(stream);
+  setupRecording(stream);
 });
 
-/* FACE MODELS */
-(async()=>{
- const m="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model";
- await faceapi.nets.tinyFaceDetector.loadFromUri(m);
- await faceapi.nets.ageGenderNet.loadFromUri(m);
- await faceapi.nets.faceExpressionNet.loadFromUri(m);
- detectFaces();
+/* ----------------- FACE AI ----------------- */
+
+(async () => {
+  const modelURL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model";
+  await faceapi.nets.tinyFaceDetector.loadFromUri(modelURL);
+  await faceapi.nets.ageGenderNet.loadFromUri(modelURL);
+  await faceapi.nets.faceExpressionNet.loadFromUri(modelURL);
+  detectFaces();
 })();
 
-function detectFaces(){
- const opts=new faceapi.TinyFaceDetectorOptions({inputSize:320});
- setInterval(async()=>{
-  faceResults=await faceapi.detectAllFaces(video,opts).withAgeAndGender().withFaceExpressions();
-  facesEl.textContent=faceResults.length;
- },120);
+function detectFaces() {
+  const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320 });
+  setInterval(async () => {
+    faceResults = await faceapi
+      .detectAllFaces(video, options)
+      .withAgeAndGender()
+      .withFaceExpressions();
+    facesEl.textContent = faceResults.length;
+  }, 120);
 }
 
-/* HANDS */
-const handsAI=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`});
-handsAI.setOptions({maxNumHands:1});
-handsAI.onResults(r=>{
- handResults=r.multiHandLandmarks||[];
- handsEl.textContent=handResults.length;
+/* ----------------- HAND AI ----------------- */
+
+const handsAI = new Hands({
+  locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
 });
-new Camera(video,{onFrame:()=>handsAI.send({image:video})}).start();
 
-/* RENDER */
-function render(){
- ctx.clearRect(0,0,canvas.width,canvas.height);
- ctx.save();ctx.translate(canvas.width,0);ctx.scale(-1,1);
- ctx.drawImage(video,0,0,canvas.width,canvas.height);
+handsAI.setOptions({ maxNumHands: 1 });
 
- ctx.strokeStyle="#00ff87";ctx.lineWidth=3;
- faceResults.forEach(f=>{
-  ctx.strokeRect(f.box.x,f.box.y,f.box.width,f.box.height);
-  const e=Object.entries(f.expressions).sort((a,b)=>b[1]-a[1])[0][0];
-  ctx.fillStyle="#00ff87";
-  ctx.fillText(`${Math.round(f.age)} ${f.gender} ${e}`,f.box.x,f.box.y-8);
- });
+handsAI.onResults(r => {
+  handResults = r.multiHandLandmarks || [];
+  handsEl.textContent = handResults.length;
+});
 
- ctx.strokeStyle="#ffd700";
- handResults.forEach(h=>{
-  const xs=h.map(p=>p.x*canvas.width);
-  const ys=h.map(p=>p.y*canvas.height);
-  ctx.strokeRect(Math.min(...xs),Math.min(...ys),Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys));
- });
+new Camera(video, {
+  onFrame: () => handsAI.send({ image: video })
+}).start();
 
- ctx.restore();
- fpsCount++;
- if(Date.now()-lastFps>1000){fpsEl.textContent=fpsCount;fpsCount=0;lastFps=Date.now();}
- requestAnimationFrame(render);
+/* ----------------- RENDER LOOP ----------------- */
+
+function render() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  // Faces
+  ctx.strokeStyle = "#7fd7ff";
+  ctx.lineWidth = 3;
+  faceResults.forEach(f => {
+    ctx.strokeRect(f.box.x, f.box.y, f.box.width, f.box.height);
+    const emotion = Object.entries(f.expressions).sort((a,b)=>b[1]-a[1])[0][0];
+    ctx.fillText(`${Math.round(f.age)} ${f.gender} ${emotion}`, f.box.x, f.box.y - 8);
+  });
+
+  // Hands
+  ctx.strokeStyle = "#ffd700";
+  handResults.forEach(h => {
+    const xs = h.map(p => (1 - p.x) * canvas.width);
+    const ys = h.map(p => p.y * canvas.height);
+    ctx.strokeRect(
+      Math.min(...xs),
+      Math.min(...ys),
+      Math.max(...xs) - Math.min(...xs),
+      Math.max(...ys) - Math.min(...ys)
+    );
+  });
+
+  fpsCount++;
+  if (Date.now() - lastFps > 1000) {
+    fpsEl.textContent = fpsCount;
+    fpsCount = 0;
+    lastFps = Date.now();
+  }
+
+  requestAnimationFrame(render);
 }
+
 render();
 
-/* GESTURE CONTROL */
-setInterval(()=>{
- if(handResults.length){
-  const h=handResults[0];
-  const palm=h[0].y;
-  const tips=[8,12,16,20].map(i=>h[i].y);
-  const open=tips.every(t=>t<palm);
-  if(open && lastGesture!=="open"){startRec.click();lastGesture="open";}
-  if(!open && lastGesture!=="fist"){stopRec.click();lastGesture="fist";}
- }
-},400);
+/* ----------------- GESTURES ----------------- */
 
-/* VOICE */
-function setupVoice(stream){
- const ac=new AudioContext();
- const src=ac.createMediaStreamSource(stream);
- const an=ac.createAnalyser();
- src.connect(an);an.fftSize=512;
- const data=new Uint8Array(an.frequencyBinCount);
- (function m(){
-  an.getByteFrequencyData(data);
-  let avg=data.reduce((a,b)=>a+b)/data.length;
-  voiceLevel.style.width=Math.min(100,(avg/255)*160)+"%";
-  requestAnimationFrame(m);
- })();
+setInterval(() => {
+  if (handResults.length) {
+    const h = handResults[0];
+    const palm = h[9].y;
+    const tips = [8, 12, 16, 20].map(i => h[i].y);
+    const open = tips.every(t => t < palm);
+
+    if (open && lastGesture !== "open") {
+      startRec.click();
+      lastGesture = "open";
+    }
+    if (!open && lastGesture !== "fist") {
+      stopRec.click();
+      lastGesture = "fist";
+    }
+  }
+}, 400);
+
+/* ----------------- VOICE ----------------- */
+
+function setupVoice(stream) {
+  const audioCtx = new AudioContext();
+  const src = audioCtx.createMediaStreamSource(stream);
+  const analyser = audioCtx.createAnalyser();
+  src.connect(analyser);
+  analyser.fftSize = 512;
+  const data = new Uint8Array(analyser.frequencyBinCount);
+
+  (function meter() {
+    analyser.getByteFrequencyData(data);
+    let avg = data.reduce((a,b)=>a+b) / data.length;
+    voiceLevel.style.width = Math.min(100, (avg / 255) * 160) + "%";
+    requestAnimationFrame(meter);
+  })();
 }
 
-/* RECORD */
-function setupRecording(stream){
- startRec.onclick=()=>{
-  chunks=[];
-  const mix=new MediaStream([...canvas.captureStream(30).getVideoTracks(),...stream.getAudioTracks()]);
-  mediaRecorder=new MediaRecorder(mix);
-  mediaRecorder.ondataavailable=e=>chunks.push(e.data);
-  mediaRecorder.onstop=()=>{
-   downloadLink.href=URL.createObjectURL(new Blob(chunks,{type:"video/webm"}));
-   downloadLink.style.display="inline";
+/* ----------------- RECORDING ----------------- */
+
+function setupRecording(stream) {
+  startRec.onclick = () => {
+    chunks = [];
+    const mixed = new MediaStream([
+      ...canvas.captureStream(30).getVideoTracks(),
+      ...stream.getAudioTracks()
+    ]);
+    mediaRecorder = new MediaRecorder(mixed);
+    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+    mediaRecorder.onstop = () => {
+      downloadLink.href = URL.createObjectURL(new Blob(chunks, { type: "video/webm" }));
+      downloadLink.style.display = "block";
+    };
+    mediaRecorder.start();
+    startRec.disabled = true;
+    stopRec.disabled = false;
   };
-  mediaRecorder.start();
-  startRec.disabled=true;stopRec.disabled=false;
- };
- stopRec.onclick=()=>{mediaRecorder.stop();startRec.disabled=false;stopRec.disabled=true;}
+
+  stopRec.onclick = () => {
+    mediaRecorder.stop();
+    startRec.disabled = false;
+    stopRec.disabled = true;
+  };
 }
 </script>
+
 </body>
 </html>
